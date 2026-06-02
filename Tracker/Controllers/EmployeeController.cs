@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Tracker.DTOs;
@@ -24,7 +24,6 @@ namespace Tracker.Controllers
             return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         }
 
-        // POST WORKLOG
         [HttpPost("worklog")]
         public async Task<IActionResult> AddWorklog(WorkLogCreateDto dto)
         {
@@ -37,16 +36,24 @@ namespace Tracker.Controllers
                 HoursWorked = dto.HoursWorked
             };
 
-            return Ok(await _service.AddWorkLog(log));
+            var result = await _service.AddWorkLog(log);
+
+            if (result != "WorkLog submitted successfully")
+                return BadRequest(new { message = result });
+
+            return Ok(new { message = result });
         }
 
-        // GET WORKLOGS (NEW)
         [HttpGet("worklogs")]
         public async Task<IActionResult> GetWorklogs()
         {
-            var userId = GetUserId();
-            var result = await _service.GetMyWorkLogs(userId);
-            return Ok(result);
+            return Ok(await _service.GetMyWorkLogs(GetUserId()));
+        }
+
+        [HttpGet("projects")]
+        public async Task<IActionResult> GetMyProjects()
+        {
+            return Ok(await _service.GetMyProjects(GetUserId()));
         }
     }
 }

@@ -5,6 +5,6 @@ namespace Tracker.Interfaces
     public interface IAuthService
     {
         Task<string> RegisterAsync(RegisterDto dto);
-        Task<string> LoginAsync(LoginDto dto);
+        Task<LoginResult> LoginAsync(LoginDto dto);
     }
 }

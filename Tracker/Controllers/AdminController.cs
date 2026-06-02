@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tracker.Entities;
 using Tracker.Interfaces;
@@ -26,7 +26,10 @@ namespace Tracker.Controllers
         [HttpDelete("employee/{id}")]
         public async Task<IActionResult> DeleteEmployee(int id)
         {
-            return Ok(await _adminService.DeleteEmployee(id));
+            var result = await _adminService.DeleteEmployee(id);
+            if (result == null)
+                return NotFound(new { message = "User not found" });
+            return Ok(new { message = result });
         }
 
         [HttpGet("projects")]
@@ -38,13 +41,16 @@ namespace Tracker.Controllers
         [HttpPost("project")]
         public async Task<IActionResult> CreateProject(Project project)
         {
-            return Ok(await _adminService.CreateProject(project));
+            return Ok(new { message = await _adminService.CreateProject(project) });
         }
 
         [HttpPost("assign")]
-        public async Task<IActionResult> Assign(int userId, int projectId)
+        public async Task<IActionResult> Assign([FromQuery] int userId, [FromQuery] int projectId)
         {
-            return Ok(await _adminService.AssignEmployeeToProject(userId, projectId));
+            var result = await _adminService.AssignEmployeeToProject(userId, projectId);
+            if (result == "Already assigned")
+                return Conflict(new { message = result });
+            return Ok(new { message = result });
         }
     }
 }

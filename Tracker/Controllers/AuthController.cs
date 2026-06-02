@@ -26,7 +26,11 @@ namespace Tracker.Controllers
         public async Task<IActionResult> Login(LoginDto dto)
         {
             var result = await _authService.LoginAsync(dto);
-            return Ok(result);
+
+            if (!result.Success)
+                return Unauthorized(new { message = result.Error });
+
+            return Ok(new { token = result.Token });
         }
     }
 }

@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Tracker.Data;
-using Tracker.Entities;
+using Tracker.DTOs;
 using Tracker.Hubs;
 
 namespace Tracker.Services
@@ -16,74 +16,104 @@ namespace Tracker.Services
             _context = context;
             _hub = hub;
         }
-        public async Task<List<WorkLog>> GetApproved()
+
+        public async Task<List<WorkLogResponseDto>> GetAllWorkLogs()
         {
             return await _context.WorkLogs
-                .Where(x => x.Status == "Approved")
-                .Include(x => x.User)
-                .Include(x => x.Project)
                 .OrderByDescending(x => x.Date)
+                .Select(x => new WorkLogResponseDto
+                {
+                    WorkLogId = x.WorkLogId,
+                    EmployeeName = x.User!.FullName,
+                    ProjectName = x.Project!.ProjectName,
+                    Date = x.Date,
+                    Description = x.Description,
+                    HoursWorked = x.HoursWorked,
+                    Status = x.Status
+                })
                 .ToListAsync();
         }
 
-        public async Task<List<WorkLog>> GetDeclined()
-        {
-            return await _context.WorkLogs
-                .Where(x => x.Status == "Declined")
-                .Include(x => x.User)
-                .Include(x => x.Project)
-                .OrderByDescending(x => x.Date)
-                .ToListAsync();
-        }
-        public async Task<List<WorkLog>> GetAllWorkLogs()
-        {
-            return await _context.WorkLogs
-                .Include(x => x.User)
-                .Include(x => x.Project)
-                .ToListAsync();
-        }
-
-        public async Task<List<WorkLog>> GetPending()
+        public async Task<List<WorkLogResponseDto>> GetPending()
         {
             return await _context.WorkLogs
                 .Where(x => x.Status == "Pending")
-                .Include(x => x.User)
-                .Include(x => x.Project)
+                .OrderByDescending(x => x.Date)
+                .Select(x => new WorkLogResponseDto
+                {
+                    WorkLogId = x.WorkLogId,
+                    EmployeeName = x.User!.FullName,
+                    ProjectName = x.Project!.ProjectName,
+                    Date = x.Date,
+                    Description = x.Description,
+                    HoursWorked = x.HoursWorked,
+                    Status = x.Status
+                })
                 .ToListAsync();
         }
 
-        public async Task<string> Approve(int workLogId)
+        public async Task<List<WorkLogResponseDto>> GetApproved()
+        {
+            return await _context.WorkLogs
+                .Where(x => x.Status == "Approved")
+                .OrderByDescending(x => x.Date)
+                .Select(x => new WorkLogResponseDto
+                {
+                    WorkLogId = x.WorkLogId,
+                    EmployeeName = x.User!.FullName,
+                    ProjectName = x.Project!.ProjectName,
+                    Date = x.Date,
+                    Description = x.Description,
+                    HoursWorked = x.HoursWorked,
+                    Status = x.Status
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<WorkLogResponseDto>> GetDeclined()
+        {
+            return await _context.WorkLogs
+                .Where(x => x.Status == "Declined")
+                .OrderByDescending(x => x.Date)
+                .Select(x => new WorkLogResponseDto
+                {
+                    WorkLogId = x.WorkLogId,
+                    EmployeeName = x.User!.FullName,
+                    ProjectName = x.Project!.ProjectName,
+                    Date = x.Date,
+                    Description = x.Description,
+                    HoursWorked = x.HoursWorked,
+                    Status = x.Status
+                })
+                .ToListAsync();
+        }
+
+        public async Task<string?> Approve(int workLogId)
         {
             var log = await _context.WorkLogs.FindAsync(workLogId);
 
             if (log == null)
-                return "Not found";
+                return null;
 
             log.Status = "Approved";
             await _context.SaveChangesAsync();
 
-            await _hub.Clients.All.SendAsync(
-                "ReceiveNotification",
-                $"✅ WorkLog {workLogId} Approved"
-            );
+            await _hub.Clients.All.SendAsync("ReceiveNotification", $"WorkLog {workLogId} Approved");
 
             return "Approved";
         }
 
-        public async Task<string> Decline(int workLogId)
+        public async Task<string?> Decline(int workLogId)
         {
             var log = await _context.WorkLogs.FindAsync(workLogId);
 
             if (log == null)
-                return "Not found";
+                return null;
 
             log.Status = "Declined";
             await _context.SaveChangesAsync();
 
-            await _hub.Clients.All.SendAsync(
-                "ReceiveNotification",
-                $"❌ WorkLog {workLogId} Declined"
-            );
+            await _hub.Clients.All.SendAsync("ReceiveNotification", $"WorkLog {workLogId} Declined");
 
             return "Declined";
         }

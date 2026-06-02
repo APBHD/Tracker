@@ -47,20 +47,21 @@ namespace Tracker.Services
             return "User Registered Successfully";
         }
 
-        public async Task<string> LoginAsync(LoginDto dto)
+        public async Task<LoginResult> LoginAsync(LoginDto dto)
         {
             var user = await _context.Users
                 .FirstOrDefaultAsync(x => x.Email == dto.Email);
 
+            // Generic message — don't leak which field is wrong (user enumeration).
             if (user == null)
-                return "Invalid Email";
+                return new LoginResult(false, Error: "Invalid email or password");
 
             bool isValidPassword = BCrypt.Net.BCrypt.Verify(
                 dto.Password,
                 user.PasswordHash);
 
             if (!isValidPassword)
-                return "Invalid Password";
+                return new LoginResult(false, Error: "Invalid email or password");
 
             var claims = new List<Claim>
             {
@@ -70,9 +71,11 @@ namespace Tracker.Services
                 new Claim(ClaimTypes.Name, user.FullName)
             };
 
+            var jwtKey = _configuration["Jwt:Key"]
+                ?? throw new InvalidOperationException("Jwt:Key is missing from configuration.");
+
             var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])
-                 );
+                Encoding.UTF8.GetBytes(jwtKey));
 
             var credentials = new SigningCredentials(
                 key,
@@ -82,10 +85,11 @@ namespace Tracker.Services
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(2),
+                expires: DateTime.UtcNow.AddHours(2),
                 signingCredentials: credentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            return new LoginResult(true, Token: tokenString);
         }
     }
 }

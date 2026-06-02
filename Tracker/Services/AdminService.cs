@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Tracker.Data;
+using Tracker.DTOs;
 using Tracker.Entities;
 using Tracker.Interfaces;
 
@@ -14,22 +15,29 @@ namespace Tracker.Services
             _context = context;
         }
 
-        public async Task<List<User>> GetAllEmployees()
+        public async Task<List<UserResponseDto>> GetAllEmployees()
         {
             return await _context.Users
                 .Where(x => x.Role == "Employee" && x.IsActive)
+                .Select(u => new UserResponseDto
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    Role = u.Role,
+                    IsActive = u.IsActive
+                })
                 .ToListAsync();
         }
 
-        public async Task<string> DeleteEmployee(int userId)
+        public async Task<string?> DeleteEmployee(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
 
             if (user == null)
-                return "User not found";
+                return null;
 
             user.IsActive = false;
-
             await _context.SaveChangesAsync();
 
             return "Employee deleted successfully";

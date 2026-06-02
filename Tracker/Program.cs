@@ -5,13 +5,17 @@ using Tracker.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 #region CONTROLLERS + SWAGGER
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -57,6 +61,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ManagerService>();
 builder.Services.AddScoped<EmployeeProjectDashboardService>();
 
@@ -83,20 +89,40 @@ builder.Services.AddCors(options =>
 
 #endregion
 
-#region JWT AUTH (THIS FIXES YOUR 401 ISSUE)
+#region JWT AUTH
 
-var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is missing from configuration.");
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication("Bearer")
 .AddJwtBearer("Bearer", options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false,
-        ValidateAudience = false,
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero
+    };
+
+    // SignalR sends JWT via query string (WebSocket can't set headers)
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
+                context.Token = accessToken;
+
+            return Task.CompletedTask;
+        }
     };
 });
 

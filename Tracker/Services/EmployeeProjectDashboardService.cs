@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Tracker.Data;
 using Tracker.DTOs;
 
@@ -30,8 +30,7 @@ namespace Tracker.Services
                     .Select(g => new EmployeeProjectSummary
                     {
                         UserId = g.Key,
-                        EmployeeName = g.First().User.FullName,
-
+                        EmployeeName = g.First().User?.FullName ?? "Unknown",
                         TotalProjects = g.Select(x => x.ProjectId).Distinct().Count(),
                         TotalWorkLogs = g.Count(),
                         TotalHours = g.Sum(x => x.HoursWorked)
