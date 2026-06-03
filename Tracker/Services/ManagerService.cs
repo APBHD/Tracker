@@ -60,16 +60,19 @@ namespace Tracker.Services
                 return "Not found";
 
             log.Status = "Approved";
-            await _context.SaveChangesAsync();
+
+            int rows = await _context.SaveChangesAsync();
+
+            var employee = await _context.Users
+                .FirstOrDefaultAsync(x => x.UserId == log.UserId);
 
             await _hub.Clients.All.SendAsync(
                 "ReceiveNotification",
-                $"✅ WorkLog {workLogId} Approved"
+                $"✅ WorkLog approved for {employee?.FullName}"
             );
 
-            return "Approved";
+            return $"Approved. Rows Updated = {rows}";
         }
-
         public async Task<string> Decline(int workLogId)
         {
             var log = await _context.WorkLogs.FindAsync(workLogId);
@@ -80,9 +83,12 @@ namespace Tracker.Services
             log.Status = "Declined";
             await _context.SaveChangesAsync();
 
+            var employee = await _context.Users
+    .FirstOrDefaultAsync(x => x.UserId == log.UserId);
+
             await _hub.Clients.All.SendAsync(
                 "ReceiveNotification",
-                $"❌ WorkLog {workLogId} Declined"
+                $"❌ WorkLog declined for {employee?.FullName}"
             );
 
             return "Declined";

@@ -3,18 +3,20 @@
 public class WorkLog
 {
     public int WorkLogId { get; set; }
-
     public int UserId { get; set; }
-    public User User { get; set; }
-
     public int ProjectId { get; set; }
-    public Project Project { get; set; }
-
     public DateTime Date { get; set; }
 
-    public string Description { get; set; }
+    public string TaskDescription { get; set; } = string.Empty;
 
     public decimal HoursWorked { get; set; }
+    public bool WfhRequest { get; set; }
 
-    public string Status { get; set; } = "Pending"; // Pending / Approved / Declined
+    public int PermissionHours { get; set; }
+
+    public string Status { get; set; } = "Pending";
+
+    public User? User { get; set; }
+
+    public Project? Project { get; set; }
 }
