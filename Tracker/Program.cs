@@ -59,6 +59,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ManagerService>();
 builder.Services.AddScoped<EmployeeProjectDashboardService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 #endregion
 

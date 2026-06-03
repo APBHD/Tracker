@@ -6,8 +6,12 @@
 
         public DateTime Date { get; set; }
 
-        public string Description { get; set; } = string.Empty;
+        public string TaskDescription { get; set; } = string.Empty;
 
         public decimal HoursWorked { get; set; }
+
+        public bool WfhRequest { get; set; }
+
+        public int PermissionHours { get; set; }
     }
 }

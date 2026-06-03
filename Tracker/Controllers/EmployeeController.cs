@@ -21,7 +21,9 @@ namespace Tracker.Controllers
 
         private int GetUserId()
         {
-            return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            return int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
         }
 
         // POST WORKLOG
@@ -33,19 +35,36 @@ namespace Tracker.Controllers
                 UserId = GetUserId(),
                 ProjectId = dto.ProjectId,
                 Date = dto.Date,
-                Description = dto.Description,
-                HoursWorked = dto.HoursWorked
+                TaskDescription = dto.TaskDescription,
+                HoursWorked = dto.HoursWorked,
+                WfhRequest = dto.WfhRequest,
+                PermissionHours = dto.PermissionHours
             };
 
-            return Ok(await _service.AddWorkLog(log));
+            var result = await _service.AddWorkLog(log);
+
+            return Ok(result);
         }
 
-        // GET WORKLOGS (NEW)
+        // EMPLOYEE DASHBOARD
+        [HttpGet("dashboard")]
+        public async Task<IActionResult> Dashboard()
+        {
+            var userId = GetUserId();
+
+            var result = await _service.GetDashboard(userId);
+
+            return Ok(result);
+        }
+
+        // GET MY WORKLOGS
         [HttpGet("worklogs")]
         public async Task<IActionResult> GetWorklogs()
         {
             var userId = GetUserId();
+
             var result = await _service.GetMyWorkLogs(userId);
+
             return Ok(result);
         }
     }
